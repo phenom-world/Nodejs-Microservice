@@ -1,10 +1,25 @@
-# Microservices Example
+# Nodejs Microservices
 
 This project demonstrates a microservices architecture with three services:
 
 1. Customer Service
 2. Billing Service
 3. Billing Worker Service
+
+# Problem Statement
+
+When a customer funds their account:
+
+1. A request containing customer data (customerId, amount, etc.) is sent to the Billing Service via REST API
+2. The Billing Service:
+
+   - Saves the transaction details (amount, customerId, status="pending", etc.)
+   - Publishes the transaction to the Billing Worker Service
+   - These operations are performed atomically
+
+3. The Billing Worker Service:
+   - Processes the transaction through a dummy charge method (simulated with 100ms delay)
+   - Updates the transaction status to "success" in the Billing Service database using the transactionId
 
 ## Prerequisites
 
@@ -76,24 +91,6 @@ curl -X POST http://localhost:3000/api/customers \
 curl -X POST http://localhost:3000/api/customers/{customerId}/fund \
   -H "Content-Type: application/json" \
   -d '{"amount": 500}'
-```
-
-3. Check customer balance:
-
-```bash
-curl http://localhost:3000/api/customers/{customerId}/balance
-```
-
-4. Check transaction status:
-
-```bash
-curl http://localhost:3001/api/transactions/{transactionId}
-```
-
-5. Get all transactions for a customer:
-
-```bash
-curl http://localhost:3001/api/customers/{customerId}/transactions
 ```
 
 ## Architecture

@@ -1,0 +1,27 @@
+{
+  "name": "billing-worker-service",
+  "version": "1.0.0",
+  "description": "Billing Worker Service",
+  "main": "dist/index.js",
+  "license": "MIT",
+  "author": "Wakeel Kehinde",
+  "scripts": {
+    "start": "node dist/src/index.js",
+    "dev": "ts-node-dev --respawn src/index.ts",
+    "build": "tsc",
+    "watch": "tsc -w"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.3",
+    "axios": "^1.6.7",
+    "dotenv": "^16.4.1",
+    "joi": "^17.13.3"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.4",
+    "@types/node": "^20.11.19",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.3.3",
+    "chalk": "4.1.2"
+  }
+}

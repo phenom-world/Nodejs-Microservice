@@ -1,0 +1,106 @@
+services:
+  customer-service:
+    build:
+      context: ./customer-service
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongodb:27017/customer-service
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+
+  billing-service:
+    build:
+      context: ./billing-service
+      dockerfile: Dockerfile
+    ports:
+      - '3001:3001'
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - MONGODB_URI=mongodb://mongodb:27017/billing-service
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+    depends_on:
+      mongodb:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  billing-worker:
+    build:
+      context: ./billing-worker-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=development
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - '5672:5672' # AMQP protocol port
+      - '15672:15672' # Management UI port
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'status']
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 40s
+    networks:
+      - app-network
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongo
+    restart: unless-stopped
+    command: --replSet rs0
+    environment:
+      MONGO_INITDB_DATABASE: app_db
+    healthcheck:
+      test: mongosh --eval 'db.runCommand("ping").ok' localhost:27017/test --quiet
+      interval: 2s
+      timeout: 3s
+      retries: 5
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app-network
+
+  mongo-init:
+    image: mongo:latest
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+    command: >
+      sh -c "sleep 5; mongosh --host mongo:27017 --eval ' rs.initiate( {
+        _id : \"rs0\",
+        members: [
+          { _id: 0, host: \"mongo:27017\" }
+        ]
+      }) '"
+
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
